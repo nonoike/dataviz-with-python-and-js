@@ -1,4 +1,5 @@
-/tmp
+tmp/
+output/
 
 ### https://raw.github.com/github/gitignore/e32de69dc7a71f84b1da648a5d893dd8bcc87d8a/Python.gitignore
 

@@ -1,10 +1,12 @@
+import datetime
 import re
 import requests
+import requests_cache
 import scrapy
+import time
 from nobel_winners.items import NWinnersItem
 
-# scrapy crawl nwinners_full
-
+# scrapy crawl nwinners_full -o output/nwinners_full.json
 
 class NWinnerFullSpider(scrapy.Spider):
     """ 受賞者の国とリンクテキストをスクレイピングする """
@@ -13,6 +15,10 @@ class NWinnerFullSpider(scrapy.Spider):
     start_urls = [  # ダウンロードされる最初のページ
         'https://en.wikipedia.org/wiki/List_of_Nobel_laureates_by_country'
     ]
+    custom_settings = {
+        # 小さな数字から順次実行
+        'ITEM_PIPELINES': {'nobel_winners.pipelines.DropNonPersons': 1}
+    }
 
     def parse(self, response):
         # print(response) # Ex. <200 https://en.wikipedia.org/wiki/List_of_Nobel_laureates_by_country>
@@ -34,7 +40,7 @@ class NWinnerFullSpider(scrapy.Spider):
                         wdata['link'], callback=self.parse_bio, dont_filter=True)
                     request.meta['item'] = NWinnersItem(**wdata)
                     yield request
-            break # TODO: 動作確認用に途中でストップさせている → 確認後に行削除
+            break  # 動作確認用に途中でストップ
 
     def process_winner_li(self, w, country=None):
         """ 受賞者の <li> タグを処理し、該当する場合は出生国か国籍を追加する。 """
@@ -87,12 +93,20 @@ class NWinnerFullSpider(scrapy.Spider):
                 item[prop['name']] = self.fetch_person_data(
                     wikidata_title_id, prop['code'], prop['value_element_name'], prop.get('is_link', False))
 
+            if item['date_of_birth']:
+                item['date_of_birth'] = self.to_date_str(item['date_of_birth'])
+            if item['date_of_death']:
+                item['date_of_death'] = self.to_date_str(item['date_of_death'])
+
         yield item
 
     def fetch_wikidata(self, wikidata_title_id):
         """ wikidata の json レスポンスを取得する。 """
+        requests_cache.install_cache('output/nobel_wikidatas', packend='sqlite', expire_after=7200)
         url = 'https://www.wikidata.org/entity/{wikidata_title_id}'.format(
             wikidata_title_id=wikidata_title_id)
+
+        time.sleep(1)  # TODO: 値が適切か要検討
         res = requests.get(url)
         return res.json()
 
@@ -108,3 +122,6 @@ class NWinnerFullSpider(scrapy.Spider):
         except Exception as e:  # データ無しでも構わないのでエラーハンドリングは妥協する
             print('not exists {}'.format(e))
             return ''
+
+    to_date_str = lambda self, datetime_str: datetime.datetime.strptime(datetime_str, '+%Y-%m-%dT%H:%M:%SZ').date().strftime('%Y-%m-%d')
+

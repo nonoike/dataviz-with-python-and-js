@@ -14,3 +14,12 @@ class NWinnersItem(scrapy.Item):
     place_of_birth = scrapy.Field()
     place_of_death = scrapy.Field()
     text = scrapy.Field()
+
+
+class NWinnerItemBio(scrapy.Item):
+    link = scrapy.Field()
+    name = scrapy.Field()
+    mini_bio = scrapy.Field()
+    image_urls = scrapy.Field()
+    bio_image = scrapy.Field()
+    images = scrapy.Field()
