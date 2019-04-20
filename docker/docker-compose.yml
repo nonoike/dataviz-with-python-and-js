@@ -1,0 +1,47 @@
+version: '3.1'
+services:
+  db:
+    image: mysql:5.7.19
+    container_name: dataviz-with-python-and-js-mysql
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --secure-file-priv=""
+    restart: always
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_USER: "mysql"
+      MYSQL_PASSWORD: "mysql"
+    ports:
+      - 3306:3306
+
+  mongo:
+    image: mongo:4.0.9-xenial
+    container_name: dataviz-with-python-and-js-mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "root"
+
+  mongo-express:
+    image: mongo-express:0.49.0
+    container_name: dataviz-with-python-and-js-mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "root"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "root"
+
+  jupyter:
+    build: .
+    container_name: dataviz-with-python-and-js-jupyter
+    command: start.sh jupyter lab --NotebookApp.token="" --NotebookApp.password=""
+    volumes:
+      - ..:/home/jovyan/work
+    ports:
+      - 8889:8888
+    environment:
+      GRANT_SUDO: "yes"
+      TZ: "Asia/Tokyo"
